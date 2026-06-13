@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Въвеждане в склад</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/site.css">
+    <style>
+        /* Стил за изскачащите прозорци  */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); 
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .popup-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            min-width: 400px;
+            animation: popIn 0.3s ease-out;
+            border-width: 4px;
+            border-style: solid;
+        }
+
+        /* Зелен стил за успех */
+        .box-success {
+            border-color: #198754;
+        }
+        
+        /* Червен стил за грешка */
+        .box-error {
+            border-color: #dc3545;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .form-control-lg {
+            border: 2px solid black;
+            box-shadow: 4px 4px 0px black;
+        }
+        .btn-custom {
+            background-color: #ffc0cb;
+            border: 2px solid black;
+            box-shadow: 4px 4px 0px black;
+            font-weight: bold;
+            padding: 10px 30px;
+        }
+        .btn-custom:hover {
+            background-color: #ffb6c1;
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px black;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="custom-header">
+        <a href="operator-warehouse-menu.html" class="text-dark text-decoration-none">
+            <i class="fas fa-arrow-left"></i> Назад
+        </a>
+        
+    </div>
+
+    <div id="successPopup" class="overlay">
+        <div class="popup-box box-success">
+            <div class="text-success" style="font-size: 60px; margin-bottom: 10px;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2 class="fw-bold mb-3">УСПЕШЕН ЗАПИС!</h2>
+            <p class="fs-5">Пратката е въведена в склада.</p>
+            <button class="btn btn-success fw-bold px-4 py-2 mt-3 shadow" onclick="closeSuccessPopup()">
+                НОВА ПРАТКА
+            </button>
+        </div>
+    </div>
+
+    <div id="errorPopup" class="overlay">
+        <div class="popup-box box-error">
+            <div class="text-danger" style="font-size: 60px; margin-bottom: 10px;">
+                <i class="fas fa-times-circle"></i>
+            </div>
+            <h2 class="fw-bold mb-3 text-danger">ГРЕШКА!</h2>
+            <p class="fs-5" id="errorMessageText">Пратката не е намерена.</p>
+            
+            <button class="btn btn-danger fw-bold px-4 py-2 mt-3 shadow" onclick="closeErrorPopup()">
+                ОПИТАЙ ОТНОВО
+            </button>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center">
+                
+                <h2 class="fw-bold mb-5"> ВЪВЕЖДАНЕ НА ПРАТКА В СКЛАД</h2>
+
+                <div class="p-4" style="background-color: #89CFF0; border: 2px solid black; border-radius: 15px; box-shadow: 6px 6px 0px black;">
+                    
+                    <div class="mb-4 text-start">
+                        <label class="fw-bold fs-5 mb-2">Текущ склад:</label>
+                        <select id="warehouseSelect" class="form-select form-control-lg fw-bold">
+                            <option value="1">Централен склад - София</option>
+                            <option value="2">Склад Север - Варна</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4 text-start">
+                        <label class="fw-bold fs-5 mb-2">Въведи номер:</label>
+                        <input type="text" id="trackingInput" class="form-control form-control-lg" placeholder="BG..." style="text-transform: uppercase;">
+                    </div>
+
+                    <div class="mb-5 text-start">
+                        <label class="fw-bold fs-5 mb-2">Особености / Забележка:</label>
+                        <input type="text" id="noteInput" class="form-control form-control-lg" placeholder="напр. нарушена опаковка">
+                    </div>
+
+                    <button class="btn btn-custom w-100 fs-4" onclick="saveChanges()">
+                        ЗАПАЗИ ПРОМЕНИТЕ
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="custom-footer"></div>
+
+    <script>
+        async function saveChanges() {
+            const trackingNum = document.getElementById('trackingInput').value.trim();
+            const warehouseId = parseInt(document.getElementById('warehouseSelect').value);
+            const note = document.getElementById('noteInput').value.trim();
+
+            if (!trackingNum) {
+                showError("Моля, въведете номер на пратка!");
+                return;
+            }
+
+            try {
+                
+                const response = await fetch('/api/shipments/update-location', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        trackingNumber: trackingNum, 
+                        warehouseId: warehouseId, 
+                        note: note 
+                    })
+                });
+
+                //ПРОВЕРКА НА РЕЗУЛТАТА
+                if (response.status === 404) {
+                    
+                    showError("Пратка с номер " + trackingNum + " не съществува!");
+                    return; 
+                }
+
+                if (response.ok) {
+                    
+                    showSuccess(); 
+                } else {
+                    showError("Възникна техническа грешка.");
+                }
+
+            } catch (e) { 
+                console.error(e); 
+                showError("Няма връзка със сървъра.");
+            }
+        }
+
+        // --- УПРАВЛЕНИЕ НА ЗЕЛЕНИЯ ПРОЗОРЕЦ 
+        function showSuccess() {
+            document.getElementById('successPopup').style.display = 'flex';
+        }
+
+        function closeSuccessPopup() {
+            document.getElementById('successPopup').style.display = 'none';
+            // Изчистваме полетата за следващата пратка
+            document.getElementById('trackingInput').value = '';
+            document.getElementById('noteInput').value = '';
+            document.getElementById('trackingInput').focus(); // Фокус за бързо писане
+        }
+
+        // --- УПРАВЛЕНИЕ НА ЧЕРВЕНИЯ ПРОЗОРЕЦ 
+        function showError(message) {
+            document.getElementById('errorMessageText').innerText = message;
+            document.getElementById('errorPopup').style.display = 'flex';
+        }
+
+        function closeErrorPopup() {
+            document.getElementById('errorPopup').style.display = 'none';
+            // Връщаме фокуса на полето, за да поправи номера веднага
+            document.getElementById('trackingInput').focus(); 
+            document.getElementById('trackingInput').select(); 
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистриране на пратка</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/site.css">
+    <style>
+        .register-header {
+            background-color: #ffc0cb;
+            padding: 15px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .form-section {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .white-input {
+            background: white;
+            border: 2px solid black;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 4px 4px 0px black;
+            width: 100%;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        label { font-weight: bold; margin-bottom: 5px; color: #333; }
+        
+        .distribution-box {
+            background-color: #f8f9fa;
+            border: 2px dashed #0d6efd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="custom-header">
+        <a href="dashboard-operator.html" class="text-dark text-decoration-none">
+            <i class="fas fa-arrow-left"></i> Назад
+        </a>
+        <div class="float-end fw-bold">
+            <i class="fas fa-user-circle"></i> <span id="operatorNameDisplay">Оператор</span>
+        </div>
+    </div>
+
+    <datalist id="senderNamesList"></datalist>
+    <datalist id="receiverNamesList"></datalist>
+    <datalist id="senderPhonesList"></datalist>
+    <datalist id="receiverPhonesList"></datalist>
+
+    <div class="container mt-4 pb-5">
+        
+        <div class="register-header shadow border border-dark">
+            <i class="fas fa-clipboard-list"></i> ФОРМА ЗА РЕГИСТРАЦИЯ
+        </div>
+
+        <div class="form-section row">
+            <div class="col-md-6 px-4">
+                <h5 class="text-center fw-bold mb-3 border-bottom border-dark pb-2">ПОДАТЕЛ</h5>
+                
+                <label>Име и Фамилия:</label>
+                <input type="text" id="senderName" class="white-input" autocomplete="off" placeholder="Иван Иванов">
+
+                <label>Телефон:</label>
+                <input type="text" id="senderPhone" class="white-input" autocomplete="off" placeholder="0888...">
+                
+                <label>Тегло на пратката (кг):</label>
+                <input type="number" id="weight" class="white-input" placeholder="1.0">
+            </div>
+
+            <div class="col-md-6 px-4">
+                <h5 class="text-center fw-bold mb-3 border-bottom border-dark pb-2">ПОЛУЧАТЕЛ</h5>
+                
+                <label>Име и Фамилия:</label>
+                <input type="text" id="receiverName" class="white-input" autocomplete="off" placeholder="Петър Петров">
+
+                <label>Телефон:</label>
+                <input type="text" id="receiverPhone" class="white-input" autocomplete="off" placeholder="0899...">
+
+                <label>Адрес за доставка:</label>
+                <textarea id="receiverAddress" class="white-input" rows="3" placeholder="гр. София, ул..."></textarea>
+            </div>
+
+            <div class="col-12 px-4 mt-4">
+                <div class="distribution-box shadow-sm">
+                    <h5 class="fw-bold mb-3 text-primary"><i class="fas fa-truck"></i> Разпределение към куриер (Опционално)</h5>
+                    <label>Изберете куриер, който да вземе пратката веднага:</label>
+                    <select id="courierSelect" class="white-input form-select border-primary cursor-pointer text-primary" style="box-shadow: 4px 4px 0px #0d6efd;">
+                        <option value="">-- Остави в склад (Без куриер) --</option>
+                        <option value="1">1. Иван Петров (Зона Център)</option>
+                        <option value="2">2. Георги Георгиев (Зона Младост)</option>
+                        <option value="3">3. Димитър Димитров (Зона Запад)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <button class="btn btn-menu-pink shadow border border-dark fw-bold" style="font-size: 1.3rem; padding: 12px 60px; border-radius: 30px;" onclick="createShipment()">
+                <i class="fas fa-plus-circle"></i> СЪЗДАЙ ПРАТКА
+            </button>
+        </div>
+
+    </div>
+
+    <div class="custom-footer"></div>
+
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center p-4" style="border: 3px solid black; background-color: #e0f7fa;">
+                <h3 class="fw-bold text-success"><i class="fas fa-check-circle"></i> УСПЕШНА РЕГИСТРАЦИЯ!</h3>
+                <p class="mt-3 fs-5">Генериран номер на пратка:</p>
+                <div class="bg-white p-3 border border-dark fw-bold fs-2 text-primary" id="generatedTracking" style="box-shadow: 4px 4px 0px black;">
+                    ---
+                </div>
+                <div class="mt-4">
+                    <button class="btn btn-dark fw-bold px-4" data-bs-dismiss="modal" onclick="location.reload()">НОВА ПРАТКА</button>
+                    <button class="btn btn-outline-dark fw-bold px-4" onclick="window.location.href='dashboard-operator.html'">КЪМ МЕНЮТО</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        const operatorName = user && user.username ? user.username : "Неизвестен Оператор";
+        document.getElementById('operatorNameDisplay').innerText = operatorName;
+
+        // Глобални масиви, в които ще пазим всички уникални имена и телефони
+        let masterNames = [];
+        let masterPhones = [];
+
+        // Функцията, която филтрира само по начални букви 
+        function setupStrictAutocomplete(inputId, listId, dataArray) {
+            const inputElement = document.getElementById(inputId);
+            const datalistElement = document.getElementById(listId);
+
+            inputElement.addEventListener('input', function() {
+                const query = this.value.trim().toLowerCase(); // Взимаме каквото е написано с малки букви
+                datalistElement.innerHTML = ''; // Изчистваме старите предложения
+
+                if (query.length > 0) {
+                    this.setAttribute('list', listId);
+                    
+                    
+                    const filtered = dataArray.filter(item => item.toLowerCase().startsWith(query));
+                    
+                    //списъка само с филтрираните резултати
+                    filtered.forEach(match => {
+                        const option = document.createElement('option');
+                        option.value = match;
+                        datalistElement.appendChild(option);
+                    });
+                } else {
+                    this.removeAttribute('list');
+                }
+            });
+        }
+
+        window.onload = async function() {
+            try {
+                const response = await fetch('/api/shipments');
+                if (response.ok) {
+                    const shipments = await response.json();
+                    
+                    const namesSet = new Set();
+                    const phonesSet = new Set();
+
+                    shipments.forEach(s => {
+                        if (s.senderName) namesSet.add(s.senderName);
+                        if (s.receiverName) namesSet.add(s.receiverName);
+                        if (s.senderPhone) phonesSet.add(s.senderPhone);
+                        if (s.receiverPhone) phonesSet.add(s.receiverPhone);
+                    });
+
+                    
+                    masterNames = Array.from(namesSet);
+                    masterPhones = Array.from(phonesSet);
+
+                    
+                    setupStrictAutocomplete('senderName', 'senderNamesList', masterNames);
+                    setupStrictAutocomplete('receiverName', 'receiverNamesList', masterNames);
+                    setupStrictAutocomplete('senderPhone', 'senderPhonesList', masterPhones);
+                    setupStrictAutocomplete('receiverPhone', 'receiverPhonesList', masterPhones);
+                }
+            } catch (error) {
+                console.error("Грешка при зареждане на предложенията:", error);
+            }
+        };
+
+        async function createShipment() {
+            const selectedCourier = document.getElementById('courierSelect').value;
+            const initialStatus = selectedCourier ? "In Transit" : "Registered";
+
+            const data = {
+                senderName: document.getElementById('senderName').value.trim(),
+                senderPhone: document.getElementById('senderPhone').value.trim(),
+                receiverName: document.getElementById('receiverName').value.trim(),
+                receiverPhone: document.getElementById('receiverPhone').value.trim(),
+                receiverAddress: document.getElementById('receiverAddress').value.trim(),
+                weight: parseFloat(document.getElementById('weight').value) || 0,
+                
+                createdBy: operatorName,
+                assignedCourierId: selectedCourier ? parseInt(selectedCourier) : null,
+                status: initialStatus
+            };
+            
+            if (!data.senderName || !data.receiverName || !data.receiverPhone || !data.receiverAddress || !data.senderPhone || !data.weight <= 0) {
+                alert("Моля, попълнете всички задължителни полета за Подател и Получател!");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/shipments/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    document.getElementById('generatedTracking').innerText = result.trackingNumber;
+                    const myModal = new bootstrap.Modal(document.getElementById('successModal'));
+                    myModal.show();
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.message || "Грешка при създаване на пратката.");
+                }
+            } catch (error) {
+                console.error("Грешка:", error);
+                alert("Няма връзка със сървъра. Проверете дали е стартиран (dotnet run).");
+            }
+        }
+    </script>
+</body>
+</html>

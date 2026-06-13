@@ -1,0 +1,204 @@
+/* site.css */
+:root {
+    --main-pink: #FFC0CB; 
+    --main-blue: #89CFF0;
+    --dark-text: #333;
+}
+
+body {
+    background-color: var(--main-blue);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+
+.custom-header {
+    background-color: var(--main-pink);
+    padding: 15px 30px;
+    font-size: 24px;
+    font-weight: bold;
+    color: black;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+
+.custom-footer {
+    background-color: var(--main-pink);
+    height: 50px;
+    margin-top: auto; 
+}
+
+
+.login-card {
+    background: white;
+    border: 2px solid black;
+    border-radius: 0; 
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 0;
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+}
+
+.login-header {
+    background-color: var(--main-pink);
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 20px;
+    border-bottom: 2px solid black;
+    position: relative;
+}
+
+
+.close-btn {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    border: 1px solid black;
+    padding: 0 5px;
+    background: #ff6b6b;
+}
+
+/* Градиентен бутон */
+.btn-gradient {
+    background: linear-gradient(to right, #efa2b3, #7a5c7e);
+    color: white;
+    border: none;
+    padding: 10px 40px;
+    border-radius: 20px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+.btn-gradient:hover {
+    opacity: 0.9;
+    color: white;
+}
+
+/* снимки */
+.carousel-item img {
+    height: 400px;
+    object-fit: cover;
+    width: 100%;
+}
+
+
+
+
+.btn-menu-pink {
+    background-color: var(--main-pink);
+    color: black;
+    font-weight: bold;
+    font-size: 1.2rem;
+    padding: 15px 20px;
+    border: none;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.btn-menu-pink:hover {
+    transform: scale(1.02); 
+    background-color: #ffb6c1;
+}
+
+/* Навигация за датите */
+.date-nav-btn {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--dark-text);
+    cursor: pointer;
+}
+
+/* Таблицата за графика */
+.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: transparent; 
+}
+
+.schedule-table th, .schedule-table td {
+    border: 2px solid black; 
+    padding: 15px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.schedule-table .time-col {
+    width: 100px;
+    background-color: rgba(255, 255, 255, 0.3); 
+}
+
+.schedule-table .task-col {
+    text-align: left; /* Текстът за задачите */
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+
+/* --- Страница за статус --- */
+
+.search-box {
+    border: 2px solid black;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 5px 5px 0px black; 
+    width: 250px;
+}
+
+
+.details-box {
+    display: none; 
+    background: white;
+    border: 3px solid black;
+    border-radius: 15px;
+    padding: 20px;
+    position: relative;
+    max-width: 400px;
+    margin: 20px auto;
+    text-align: left;
+    box-shadow: 5px 5px 10px rgba(0,0,0,0.2);
+}
+
+
+.close-details {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Секцията за промяна на статус */
+.status-change-section {
+    display: none;
+    text-align: left;
+    max-width: 400px;
+    margin: 20px auto;
+}
+
+
+.custom-radio {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.custom-radio input[type="radio"] {
+    width: 25px;
+    height: 25px;
+    margin-right: 15px;
+    accent-color: black; 
+}

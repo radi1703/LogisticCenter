@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обработка на пратка</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/site.css">
+    <style>
+        .status-card {
+            background: white;
+            border: 3px solid black;
+            border-radius: 15px;
+            box-shadow: 6px 6px 0px black;
+            max-width: 600px;
+            margin: 40px auto;
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background-color: #89CFF0;
+            padding: 15px;
+            border-bottom: 3px solid black;
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        .form-control-custom {
+            border: 2px solid black;
+            font-weight: bold;
+            box-shadow: 3px 3px 0px #ccc;
+        }
+        
+        .locked-screen {
+            background-color: #f8f9fa;
+            border: 3px dashed #dc3545;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            display: none; 
+        }
+        
+        #officeSelection {
+            display: none;
+            background-color: #e0f7fa;
+            padding: 15px;
+            border: 2px solid #0dcaf0;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="custom-header">
+        <a href="courier-schedule.html" class="text-dark text-decoration-none">
+            <i class="fas fa-arrow-left"></i> Към графика
+        </a>
+        
+    </div>
+
+    <div class="container mt-5">
+        <div class="status-card">
+            <div class="card-header-custom">
+                <i class="fas fa-box-open"></i> Пратка: <span id="trackingNumberDisplay">Зареждане...</span>
+            </div>
+            
+            <div class="p-4">
+                <div class="mb-4 p-3 bg-light border border-dark rounded">
+                    <div class="mb-2 border-bottom border-secondary pb-2">
+                        <span class="text-muted fw-bold"><i class="fas fa-user text-primary"></i> Получател:</span>
+                        <span id="receiverNameDisplay" class="fs-5 fw-bold ms-2">Зареждане...</span>
+                    </div>
+                    <div class="mb-2 border-bottom border-secondary pb-2">
+                        <span class="text-muted fw-bold"><i class="fas fa-phone text-success"></i> Телефон:</span>
+                        <span id="receiverPhoneDisplay" class="fs-5 fw-bold ms-2">Зареждане...</span>
+                    </div>
+                    <div class="pt-1">
+                        <span class="text-muted fw-bold"><i class="fas fa-map-marker-alt text-danger"></i> Адрес за доставка:</span>
+                        <div id="addressDisplay" class="fs-5 fw-bold mt-1">Зареждане...</div>
+                    </div>
+                </div>
+
+                <div id="lockedMessage" class="locked-screen mb-3">
+                    <i class="fas fa-lock text-danger" style="font-size: 40px;"></i>
+                    <h4 class="fw-bold mt-2 text-danger">ПРАТКАТА Е ПРИКЛЮЧЕНА</h4>
+                    <p class="text-muted fw-bold mb-0">Статусът на тази пратка вече не може да бъде променян.</p>
+                </div>
+
+                <div id="editForm">
+                    <label class="form-label fw-bold fs-5">Отбележи нов статус:</label>
+                    <select id="statusSelect" class="form-select form-control-custom fs-5 mb-3" onchange="checkRedirect()">
+                        <option value="">-- Избери статус --</option>
+                        <option value="Delivered">✔️ Доставена на клиента</option>
+                        <option value="Refused">❌ Отказана от клиента</option>
+                        <option value="Redirected">🏢 Пренасочване до офис</option>
+                    </select>
+
+                    <div id="officeSelection">
+                        <label class="form-label fw-bold text-dark"><i class="fas fa-building"></i> Избери офис за пренасочване:</label>
+                        <select id="officeSelect" class="form-select border-info fw-bold">
+                            <option value="">-- Избери локация --</option>
+                            <option value="Офис София (ул. Витоша 15)">Офис София (ул. Витоша 15)</option>
+                            <option value="Офис Варна (бул. Сливница 10)">Офис Варна (бул. Сливница 10)</option>
+                            <option value="Офис Русе (ул. Александровска 50)">Офис Русе (ул. Александровска 50)</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-4 mb-4">
+                        <label class="form-label fw-bold">Коментар / Бележка:</label>
+                        <textarea id="noteInput" class="form-control form-control-custom" rows="2" placeholder="..."></textarea>
+                    </div>
+
+                    <button class="btn btn-dark w-100 fw-bold fs-4 py-2 shadow" onclick="saveCourierStatus()">
+                        ЗАПАЗИ СТАТУСА
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const trackingNum = urlParams.get('track');
+
+        if (trackingNum) {
+            document.getElementById('trackingNumberDisplay').innerText = trackingNum;
+            loadShipmentData();
+        } else {
+            alert("Липсва номер на пратка!");
+            window.location.href = 'dashboard-courier.html';
+        }
+
+        async function loadShipmentData() {
+            try {
+                const response = await fetch(`/api/shipments/search/${trackingNum}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    //Попълваме името и телефона на получателя
+                    document.getElementById('receiverNameDisplay').innerText = data.receiverName || "Няма въведено име";
+                    document.getElementById('receiverPhoneDisplay').innerText = data.receiverPhone || "Няма въведен телефон";
+                    document.getElementById('addressDisplay').innerText = data.receiverAddress || "Няма въведен адрес";
+                    
+                    if (data.status === 'Delivered' || data.status === 'Refused' || data.status === 'Redirected') {
+                        document.getElementById('editForm').style.display = 'none'; 
+                        document.getElementById('lockedMessage').style.display = 'block'; 
+                    }
+                }
+            } catch (error) {
+                console.error("Грешка при зареждане:", error);
+            }
+        }
+
+        function checkRedirect() {
+            const status = document.getElementById('statusSelect').value;
+            const officeDiv = document.getElementById('officeSelection');
+            if (status === 'Redirected') {
+                officeDiv.style.display = 'block';
+            } else {
+                officeDiv.style.display = 'none';
+            }
+        }
+
+        async function saveCourierStatus() {
+            const finalStatus = document.getElementById('statusSelect').value;
+            let finalNote = document.getElementById('noteInput').value;
+
+            if (!finalStatus) {
+                alert("Моля, изберете статус!");
+                return;
+            }
+
+            if (finalStatus === 'Redirected') {
+                const office = document.getElementById('officeSelect').value;
+                if (!office) {
+                    alert("Моля, изберете офис за пренасочване!");
+                    return;
+                }
+                finalNote = `[ПРЕНАСОЧЕНА ДО: ${office}] ` + finalNote;
+            }
+
+            const updateData = {
+                status: finalStatus,
+                note: finalNote,
+                problemType: "", 
+                problemDescription: ""
+            };
+
+            try {
+                const response = await fetch(`/api/shipments/update-full/${trackingNum}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (response.ok) {
+                    alert("Успешно запазихте статуса на пратката!");
+                    window.location.href = 'dashboard-courier.html'; 
+                } else {
+                    alert("Грешка при запис в базата данни.");
+                }
+            } catch (error) {
+                alert("Няма връзка със сървъра.");
+            }
+        }
+    </script>
+</body>
+</html>

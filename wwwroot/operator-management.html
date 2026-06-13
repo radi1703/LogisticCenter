@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление на пратки</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/site.css">
+    <style>
+        /* стилове за popup */
+        .overlay {
+            display: none; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); 
+            z-index: 9999; justify-content: center; align-items: center;
+        }
+        .popup-mini {
+            background: white; padding: 25px; border-radius: 12px;
+            text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 350px; border: 3px solid #198754; 
+            animation: slideDown 0.3s ease-out;
+        }
+        @keyframes slideDown {
+            0% { transform: translateY(-50px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* търсачка и грешки */
+        .search-section {
+            background-color: #f8f9fa; border-bottom: 2px solid black;
+            padding: 30px 0; text-align: center;
+        }
+        .white-search-box {
+            background: white; border: 2px solid black; border-radius: 10px;
+            padding: 10px 20px; font-size: 1.5rem; font-weight: bold;
+            box-shadow: 4px 4px 0px black; text-align: center;
+            width: 350px; text-transform: uppercase;
+        }
+        .error-alert {
+            display: none; max-width: 600px; margin: 20px auto;
+            background-color: #f8d7da; color: #842029;
+            border: 2px solid #f5c2c7; border-radius: 10px;
+            padding: 15px; text-align: center; font-weight: bold;
+            font-size: 1.2rem; box-shadow: 4px 4px 0px #dc3545;
+        }
+
+        /* обединен контейнер за работа */
+        #workspaceSection {
+            display: none; /* Скрит по подразбиране */
+            margin-top: 30px;
+            margin-bottom: 50px;
+            animation: fadeIn 0.4s;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* карти - лявата и дясна */
+        .info-card, .edit-card {
+            background: white;
+            border: 2px solid black;
+            border-radius: 15px;
+            box-shadow: 6px 6px 0px black;
+            height: 100%;
+            overflow: hidden;
+        }
+        .card-header-custom {
+            padding: 15px;
+            border-bottom: 2px solid black;
+            font-weight: bold;
+            font-size: 1.3rem;
+            text-align: center;
+        }
+        .header-blue { background-color: #89CFF0; } /* За инфото */
+        .header-yellow { background-color: #ffc107; } /* За редакцията */
+        
+        .label-text { font-weight: bold; margin-right: 5px; color: #555; }
+        .form-control-custom { border: 2px solid black; box-shadow: 3px 3px 0px #ccc; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="custom-header">
+        <a href="dashboard-operator.html" class="text-dark text-decoration-none">
+            <i class="fas fa-arrow-left"></i> Назад
+        </a>
+    </div>
+
+    <div id="successPopup" class="overlay">
+        <div class="popup-mini">
+            <div class="text-success mb-3" style="font-size: 50px;"><i class="fas fa-check-circle"></i></div>
+            <h4 class="fw-bold mb-3">ГОТОВО!</h4>
+            <p class="text-muted mb-4">Промените са запазени успешно.</p>
+            <button class="btn btn-success w-100 fw-bold shadow" onclick="closePopup()">ОК</button>
+        </div>
+    </div>
+
+    <div class="search-section">
+        <h2 class="fw-bold mb-4"><i class="fas fa-search"></i> ТЪРСЕНЕ И УПРАВЛЕНИЕ</h2>
+        <div class="d-flex justify-content-center gap-2">
+            <input type="text" id="trackingInput" class="white-search-box" placeholder="Въведи номер...">
+            <button class="btn btn-dark shadow px-4 fw-bold fs-5" onclick="loadShipment()">НАМЕРИ</button>
+        </div>
+
+        <div id="errorContainer" class="error-alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <span id="errorText">Пратка с този номер не съществува!</span>
+        </div>
+    </div>
+
+    <div class="container" id="workspaceSection">
+        <div class="row g-4">
+            
+            <!-- лява част - информация -->
+            <div class="col-lg-6" id="infoColumn">
+                <div class="info-card">
+                    <div class="card-header-custom header-blue">
+                        <i class="fas fa-info-circle"></i> Детайли на пратка: <span id="displayTrackingInfo" class="text-decoration-underline">---</span>
+                    </div>
+                    <div class="p-4 fs-5" style="line-height: 1.8;">
+                        <div class="p-3 mb-3 bg-light border border-dark rounded">
+                            <div class="text-center fw-bold mb-2">Текущ Статус:</div>
+                            <div id="statusValue" class="text-center fw-bold fs-4" style="color: #d63384;">---</div> 
+                        </div>
+
+                        <div><span class="label-text">Регистрирана от:</span> <span id="createdByDisplay" class="fw-bold text-primary">---</span></div>
+                        <hr class="border-secondary">
+                     
+
+                        <div><span class="label-text">Подател:</span> <span id="senderName">---</span></div>
+                        <div><span class="label-text">Тел. подател:</span> <span id="senderPhone">---</span></div>
+                        <hr class="border-secondary">
+                        <div><span class="label-text">Получател:</span> <span id="receiverName">---</span></div>
+                        <div><span class="label-text">Адрес:</span> <span id="receiverAddress">---</span></div>
+                        <div><span class="label-text">Тел. получател:</span> <span id="receiverPhone">---</span></div>
+                        <hr class="border-secondary">
+                        <div><span class="label-text">Тегло:</span> <span id="weight">---</span> кг</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- съобщение за заключена пратка (Показва се само ако е при куриер или приключена) -->
+            <div class="col-lg-6" id="readOnlyMessage" style="display: none;">
+                <div class="alert alert-warning border border-2 border-warning shadow text-center h-100 d-flex flex-column justify-content-center align-items-center" style="border-radius: 15px; background-color: #fff3cd;">
+                    <i class="fas fa-lock text-warning mb-3" style="font-size: 4rem;"></i>
+                    <h4 class="fw-bold text-dark">Редакцията е заключена</h4>
+                    <p class="text-dark fs-5 mt-2 px-3">Тази пратка се обработва от куриер или вече е приключена (Доставена/Отказана). Операторът няма право да променя нейния статус.</p>
+                </div>
+            </div>
+
+            <!-- дясна част - редакция (Показва се само за пратки в склад) -->
+            <div class="col-lg-6" id="editColumn">
+                <div class="edit-card">
+                    <div class="card-header-custom header-yellow">
+                        <i class="fas fa-edit"></i> Редакция и Управление
+                    </div>
+                    <div class="p-4">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Промяна на Статус:</label>
+                            <select id="statusSelect" class="form-select form-control-custom">
+                                <!-- Опциите се генерират динамично от JS според статуса -->
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Бележки / Коментар:</label>
+                            <textarea id="noteInput" class="form-control form-control-custom" rows="2" placeholder="Добави бележка..."></textarea>
+                        </div>
+
+                        <div class="p-3 border border-danger rounded bg-white mb-4" style="box-shadow: 3px 3px 0px #dc3545;">
+                            <label class="form-label fw-bold text-danger">⚠️ Докладване на проблем:</label>
+                            <select id="problemType" class="form-select border-danger text-danger mb-2 fw-bold">
+                                <option value="">-- Няма проблем --</option>
+                                <option value="Damaged">Увредена опаковка</option>
+                                <option value="Lost">Изгубена</option>
+                                <option value="Wrong Address">Грешен адрес</option>
+                                <option value="Delayed">Закъснение</option>
+                            </select>
+                            <textarea id="problemDesc" class="form-control border-danger" placeholder="Опиши проблема..." rows="2"></textarea>
+                        </div>
+
+                        <button class="btn btn-success w-100 fw-bold fs-5 shadow py-2" onclick="saveChanges()">
+                            <i class="fas fa-save me-2"></i> ЗАПАЗИ ПРОМЕНИТЕ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="custom-footer"></div>
+
+    <script>
+        document.getElementById('trackingInput').addEventListener("keypress", function(event) {
+            if (event.key === "Enter") loadShipment();
+        });
+
+        async function loadShipment() {
+            const trackingNum = document.getElementById('trackingInput').value.trim();
+            
+            // Скриваме всичко преди ново търсене
+            document.getElementById('errorContainer').style.display = 'none';
+            document.getElementById('workspaceSection').style.display = 'none';
+
+            if (!trackingNum) return;
+
+            try {
+                const response = await fetch(`/api/shipments/search/${trackingNum}`);
+
+                if (response.status === 404) {
+                    const errBox = document.getElementById('errorContainer');
+                    document.getElementById('errorText').innerText = `Пратка с номер "${trackingNum}" не е намерена!`;
+                    errBox.style.display = 'block';
+                    return;
+                }
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // показване на работното пространство
+                    document.getElementById('workspaceSection').style.display = 'block';
+                    
+                    // лява част детайли
+                    document.getElementById('displayTrackingInfo').innerText = data.trackingNumber;
+                    document.getElementById('statusValue').innerText = translateStatus(data.status);
+
+                    // името на оператора 
+                    document.getElementById('createdByDisplay').innerText = data.createdBy ? data.createdBy : "Системата (стара пратка)";
+                    
+                    document.getElementById('senderName').innerText = data.senderName;
+                    document.getElementById('senderPhone').innerText = data.senderPhone || "не е посочен";
+                    document.getElementById('receiverName').innerText = data.receiverName;
+                    document.getElementById('receiverAddress').innerText = data.receiverAddress || "не е посочен";
+                    document.getElementById('receiverPhone').innerText = data.receiverPhone || "не е посочен";
+                    document.getElementById('weight').innerText = data.weight;
+
+                    // управление на дясна част
+                    const editColumn = document.getElementById('editColumn');
+                    const readOnlyMessage = document.getElementById('readOnlyMessage');
+                    const statusSelect = document.getElementById('statusSelect');
+
+                    // Изчистваме старите опции
+                    statusSelect.innerHTML = ''; 
+
+                    // Ако е при куриер или е приключена - заключваме радакцията
+                    if (data.status === 'In Transit' || data.status === 'Delivered' || data.status === 'Refused' || data.status === 'Redirected') {
+                        editColumn.style.display = 'none';
+                        readOnlyMessage.style.display = 'block';
+                    } 
+                    // Ако е в склад - отключваме и двете опции
+                    else {
+                        editColumn.style.display = 'block';
+                        readOnlyMessage.style.display = 'none';
+
+                        if (data.status === 'In Warehouse') {
+                            statusSelect.innerHTML = `
+                                <option value="In Warehouse">В склад (Текущ)</option>
+                                <option value="Delivered">Доставена</option>
+                                <option value="Refused">Отказана</option>
+                            `;
+                        } else {
+                            // За всеки случай, ако попаднем на стар запис със статус Registered
+                            statusSelect.innerHTML = `
+                                <option value="${data.status}">${translateStatus(data.status)}</option>
+                                <option value="Delivered">Доставена</option>
+                                <option value="Refused">Отказана</option>
+                            `;
+                        }
+
+                        // Пълним стойностите във формата
+                        document.getElementById('statusSelect').value = data.status;
+                        document.getElementById('noteInput').value = data.note || "";
+                        document.getElementById('problemType').value = data.problemType || "";
+                        document.getElementById('problemDesc').value = data.problemDescription || "";
+                    }
+                } 
+            } catch (error) {
+                console.error(error);
+                alert("Грешка при връзка със сървъра.");
+            }
+        }
+
+        async function saveChanges() {
+            const trackingNum = document.getElementById('displayTrackingInfo').innerText;
+            
+            const updateData = {
+                status: document.getElementById('statusSelect').value,
+                note: document.getElementById('noteInput').value,
+                problemType: document.getElementById('problemType').value,
+                problemDescription: document.getElementById('problemDesc').value
+            };
+
+            try {
+                const response = await fetch(`/api/shipments/update-full/${trackingNum}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (response.ok) {
+                    document.getElementById('successPopup').style.display = 'flex';
+                } else {
+                    alert("Възникна грешка при запис.");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Няма връзка със сървъра.");
+            }
+        }
+
+        function closePopup() {
+            document.getElementById('successPopup').style.display = 'none';
+            document.getElementById('workspaceSection').style.display = 'none';
+            
+            const input = document.getElementById('trackingInput');
+            input.value = '';
+            input.focus();
+        }
+
+        function translateStatus(statusEn) {
+            const statuses = {
+                "In Warehouse": "В склад",
+                "In Transit": "В движение (Куриер)",
+                "Delivered": "Доставена",
+                "Refused": "Отказана",
+                "Redirected": "Пренасочена до офис" 
+            };
+            return statuses[statusEn] || statusEn;
+        }
+    </script>
+
+</body>
+</html>

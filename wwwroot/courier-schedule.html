@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Куриер - График</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/site.css">
+    <style>
+        
+        .schedule-header {
+            background-color: #89CFF0; 
+            border: 2px solid black;
+            box-shadow: 4px 4px 0px black;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+
+        .custom-table {
+            border: 2px solid black;
+            width: 100%;
+            background: white;
+            box-shadow: 4px 4px 0px black;
+        }
+
+        .custom-table th {
+            background-color: #89CFF0;
+            border-bottom: 2px solid black;
+            border-right: 2px solid black;
+            padding: 15px;
+            text-align: center;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .custom-table td {
+            border-bottom: 1px solid black;
+            border-right: 1px solid black;
+            padding: 15px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            vertical-align: middle;
+        }
+
+        .status-done { color: green; }
+        .status-progress { color: orange; }
+        .status-wait { color: black; }
+        
+        a.tracking-link {
+            color: #0d6efd;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="custom-header">
+        <a href="dashboard-courier.html" class="text-dark text-decoration-none">
+            <i class="fas fa-arrow-left"></i> Назад
+        </a>
+        <div class="float-end fw-bold">COIvan</div>
+    </div>
+
+    <div class="container mt-5">
+        
+        <div class="schedule-header">
+            <h1 class="fw-bold m-0" id="dateHeader">дата: ...</h1>
+            <h3 class="fw-bold mt-2">смяна: 09:00 - 18:00h</h3>
+        </div>
+
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">ЧАС</th>
+                    <th style="width: 65%;">ЗАДАЧА / МАРШРУТ</th>
+                    <th style="width: 20%;">СТАТУС</th>
+                </tr>
+            </thead>
+            <tbody id="scheduleBody">
+                <tr><td colspan="3" class="text-center">Зареждане на графика...</td></tr>
+            </tbody>
+        </table>
+
+    </div>
+
+    <div class="custom-footer"></div>
+
+    <script>
+        // днешна дата
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('dateHeader').innerText = "дата: (" + new Date().toLocaleDateString('bg-BG', options) + ")";
+
+        // взимаме потребителя от паметта
+        const user = JSON.parse(localStorage.getItem('user'));
+        
+        // Ако няма логнат потребител, се връщаме към логин
+        if (!user) {
+            window.location.href = 'index.html';
+        } else {
+            // Показваме името и горе вдясно
+            document.querySelector('.float-end').innerText = `(${user.username})`;
+            // Зареждаме графика за този потребител
+            loadSchedule(user.username);
+        }
+
+        async function loadSchedule(username) {
+            try {
+                // Изпращаме заявка с динамичното име
+                const response = await fetch(`/api/shipments/my-schedule/${username}`);
+                
+                if (!response.ok) {
+                    document.getElementById('scheduleBody').innerHTML = `<tr><td colspan="3" class="text-center">Няма задачи за днес.</td></tr>`;
+                    return;
+                }
+
+                const shipments = await response.json();
+                const tbody = document.getElementById('scheduleBody');
+                tbody.innerHTML = ''; 
+
+                // Статичен ред "Зареждане"
+                tbody.innerHTML += `
+                    <tr>
+                        <td>09:00</td>
+                        <td>Зареждане от Централен склад</td>
+                        <td class="status-done">Завършено</td>
+                    </tr>
+                `;
+
+                // Динамични задачи - Пратките
+                let currentHour = 10;
+                let currentMinute = 30;
+
+                if (shipments.length === 0) {
+                     tbody.innerHTML += `<tr><td colspan="3" class="text-muted fst-italic py-3">Няма назначени пратки за този куриер днес.</td></tr>`;
+                }
+
+                shipments.forEach((s, index) => {
+                    const timeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+                    
+                    // след работно време
+                    let afterHoursBadge = "";
+                    if (currentHour >= 18) {
+                        afterHoursBadge = `<br><span class="badge bg-warning text-dark mt-1 shadow-sm" style="font-size: 0.75rem; border: 1px solid black;">ЗА УТРЕ</span>`;
+                    }
+                    
+                    let statusBg = "status-wait";
+                    let statusText = s.status;
+                    
+                    if (s.status === "In Transit") { statusText = "В процес"; statusBg = "status-progress"; }
+                    if (s.status === "Delivered") { statusText = "Завършено"; statusBg = "status-done"; }
+                    if (s.status === "Refused") { statusText = "Отказана"; statusBg = "status-danger"; }
+
+                    const address = s.receiverAddress ? `Доставка: ${s.receiverAddress}` : "Доставка до адрес";
+
+                    const row = `
+                        <tr>
+                            <td>
+                                <span class="fw-bold">${timeString}</span>
+                                ${afterHoursBadge}
+                            </td>
+                            <td>${address} (Пратка <a href="courier-status.html?track=${s.trackingNumber}" class="tracking-link">${s.trackingNumber}</a>)</td>
+                            <td class="${statusBg}">${statusText}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+
+                    // Добавяме обедна почивка след втората пратка 
+                    if (index === 1) {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>13:00</td>
+                                <td class="fw-bold">Обедна почивка</td>
+                                <td>-</td>
+                            </tr>
+                        `;
+                        currentHour = 14; currentMinute = 30; // Променяме часа след почивката
+                    } else {
+                        // Увеличаваме с 45 мин за следващата доставка
+                        currentMinute += 45;
+                        if (currentMinute >= 60) {
+                            currentMinute -= 60;
+                            currentHour++;
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('scheduleBody').innerHTML = `<tr><td colspan="3" class="text-danger text-center">Сървърна грешка.</td></tr>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistic Center - Вход</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/site.css">
+    <style>
+        
+        .carousel-custom {
+            border: 3px solid black;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 6px 6px 0px black;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="custom-header fw-bold fs-4">
+        <i class="fas fa-shipping-fast me-2"></i> Logistic Center
+    </div>
+
+    <div class="container mt-5 mb-5">
+        <div class="row align-items-center justify-content-center gap-4 gap-lg-0">
+            
+            <div class="col-lg-7 mb-4 mb-lg-0">
+                <div id="mainCarousel" class="carousel slide carousel-custom" data-bs-ride="carousel">
+                    <div class="carousel-indicators">
+                        <button type="button" data-bs-target="#mainCarousel" data-bs-slide-to="0" class="active"></button>
+                        <button type="button" data-bs-target="#mainCarousel" data-bs-slide-to="1"></button>
+                        <button type="button" data-bs-target="#mainCarousel" data-bs-slide-to="2"></button>
+                    </div>
+                    <div class="carousel-inner">
+                        <div class="carousel-item active">
+                            <img src="/images/image1.png" class="d-block w-100" alt="Warehouse 1">
+                        </div>
+                        <div class="carousel-item">
+                            <img src="/images/image3.png" class="d-block w-100" alt="Warehouse 2">
+                        </div>
+                        <div class="carousel-item">
+                            <img src="/images/image2.png" class="d-block w-100" alt="Warehouse 3">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="login-card text-center pb-4">
+                    <div class="login-header">
+                        ВХОД В СИСТЕМАТА
+                    </div>
+                    
+                    <div class="p-4">
+                        <div class="mb-3 text-start">
+                            <label class="form-label fw-bold"><i class="fas fa-user"></i> Потребителско име</label>
+                            <input type="text" id="username" class="form-control" placeholder="Въведи код (напр. OP1)" style="border: 2px solid #ccc;">
+                        </div>
+
+                        <div class="mb-3 text-start">
+                            <label class="form-label fw-bold"><i class="fas fa-key"></i> Парола</label>
+                            <div class="input-group">
+                                <input type="password" id="password" class="form-control" style="border: 2px solid #ccc; border-right: none;">
+                                <span class="input-group-text bg-white" onclick="togglePassword()" style="border: 2px solid #ccc; border-left: none; cursor: pointer;">
+                                    <i class="fas fa-eye text-muted" id="toggleIcon"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-gradient w-100 fs-5" onclick="checkLogin()">ВЛИЗАНЕ</button>
+
+                        <div class="mt-4 pt-3 border-top">
+                            <p class="mb-2 fw-bold text-muted" style="font-size: 0.9rem;">Видове потребители:</p>
+                            <div class="d-flex justify-content-between px-2" style="font-size: 0.85rem; font-weight: bold;">
+                                <span style="color: #d63384;">OP - Оператор</span>
+                                <span style="color: #0d6efd;">CO - Куриер</span>
+                                <span style="color: #198754;">M - Мениджър</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="custom-footer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // влизане с натискане на Enter
+        document.getElementById('password').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkLogin();
+            }
+        });
+        document.getElementById('username').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkLogin();
+            }
+        });
+
+        // За влизане в системата
+        async function checkLogin() {
+            const usernameInput = document.getElementById('username').value.trim();
+            const passwordInput = document.getElementById('password').value;
+
+            // Проверка дали полетата не са празни
+            if (!usernameInput || !passwordInput) {
+                alert("Моля, въведете потребителско име и парола!");
+                return;
+            }
+
+            try {
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        username: usernameInput, 
+                        password: passwordInput 
+                    })
+                });
+
+                
+                if (response.ok) {
+                    const userData = await response.json(); 
+                    
+                    
+                    localStorage.setItem('user', JSON.stringify(userData));
+
+                    // Пренасочваме според ролята
+                    if (userData.role === 'Courier') {
+                        window.location.href = 'dashboard-courier.html';
+                    } else if (userData.role === 'Operator') {
+                        window.location.href = 'dashboard-operator.html';
+                    } else if (userData.role === 'Manager') {
+                        window.location.href = 'dashboard-manager.html';
+                    } else {
+                        alert("Непозната роля в системата!");
+                    }
+                } 
+                
+                else {
+                    const errorData = await response.json();
+                    alert(errorData.message || "Грешно потребителско име или парола!");
+                }
+                
+            } catch (error) {
+                console.error("Грешка при връзка със сървъра:", error);
+                alert("Няма връзка със сървъра. Проверете дали програмата е стартирана (dotnet run).");
+            }
+        } 
+
+        //  показване/скриване на паролата
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash'); 
+            } else {
+                
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye'); 
+            }
+        }
+    </script>
+
+</body>
+</html>

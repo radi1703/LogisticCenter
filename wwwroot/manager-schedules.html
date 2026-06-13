@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Графици на Куриери</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/site.css">
+    <style>
+        .courier-card {
+            background: white; border: 3px solid black; border-radius: 15px;
+            box-shadow: 6px 6px 0px black; margin-bottom: 30px; overflow: hidden;
+        }
+        .courier-header {
+            background-color: #ffc107; padding: 15px; border-bottom: 3px solid black;
+            font-size: 1.3rem; font-weight: bold;
+        }
+        .task-item {
+            border-bottom: 1px solid #ccc; padding: 10px 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .task-item:last-child { border-bottom: none; }
+        .limit-badge {
+            background: black; color: white; padding: 5px 10px;
+            border-radius: 20px; font-size: 1rem;
+        }
+    </style>
+</head>
+<body style="background-color: #f8f9fa;">
+
+    <div class="custom-header">
+        <a href="dashboard-manager.html" class="text-dark text-decoration-none">
+            <i class="fas fa-arrow-left"></i> Назад към таблото
+        </a>
+        <div class="float-end fw-bold"><i class="fas fa-user-tie"></i> Мениджър</div>
+    </div>
+
+    <div class="container mt-4 mb-5">
+        <h2 class="fw-bold text-center mb-4 text-uppercase"><i class="fas fa-calendar-alt text-primary"></i> Графици и натовареност на куриерите</h2>
+
+        <div class="row" id="couriersContainer">
+            </div>
+    </div>
+
+    <div class="custom-footer"></div>
+
+    <script>
+        // Статичен списък на куриерите 
+        const couriers = [
+            { id: 1, name: "Иван Петров", zone: "Зона Център", color: "#89CFF0" },
+            { id: 2, name: "Георги Георгиев", zone: "Зона Младост", color: "#ffc0cb" },
+            { id: 3, name: "Димитър Димитров", zone: "Зона Запад", color: "#dbeafe" }
+        ];
+
+        window.onload = async function() {
+            try {
+                // Взимаме всички пратки от системата
+                const response = await fetch('/api/shipments');
+                const shipments = await response.json();
+
+                const container = document.getElementById('couriersContainer');
+
+                // За всеки куриер генерираме карта
+                couriers.forEach(courier => {
+                    // Намираме само пратките, които са за този куриер И са в движение
+                    const myTasks = shipments.filter(s => s.assignedCourierId === courier.id && s.status === 'In Transit');
+                    
+                    let tasksHtml = '';
+                    if (myTasks.length === 0) {
+                        tasksHtml = `<div class="p-4 text-center text-muted fw-bold fst-italic">Няма разпределени пратки в момента.</div>`;
+                    } else {
+                        myTasks.forEach(task => {
+                            tasksHtml += `
+                                <div class="task-item">
+                                    <div>
+                                        <div class="fw-bold fs-5 text-primary">${task.trackingNumber}</div>
+                                        <div class="text-muted"><i class="fas fa-map-marker-alt text-danger"></i> ${task.receiverAddress || 'Няма адрес'}</div>
+                                    </div>
+                                    <span class="badge bg-warning text-dark border border-dark fs-6">В движение</span>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    // Оцветяваме брояча в червено, ако е стигнал лимита (5)
+                    const countColor = myTasks.length >= 5 ? 'text-danger' : 'text-white';
+
+                    const cardHtml = `
+                        <div class="col-md-4">
+                            <div class="courier-card">
+                                <div class="courier-header" style="background-color: ${courier.color};">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span><i class="fas fa-truck"></i> ${courier.name}</span>
+                                        <span class="limit-badge"><span class="${countColor}">${myTasks.length}</span> / 5</span>
+                                    </div>
+                                    <div class="fs-6 fw-normal text-dark mt-1"><i class="fas fa-map"></i> ${courier.zone}</div>
+                                </div>
+                                <div class="bg-white">
+                                    ${tasksHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += cardHtml;
+                });
+
+            } catch (error) {
+                console.error("Грешка при зареждане:", error);
+                alert("Няма връзка със сървъра.");
+            }
+        };
+    </script>
+</body>
+</html>
