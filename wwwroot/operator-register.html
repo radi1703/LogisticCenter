@@ -220,7 +220,7 @@
                 status: initialStatus
             };
             
-            if (!data.senderName || !data.receiverName || !data.receiverPhone || !data.receiverAddress || !data.senderPhone || !data.weight <= 0) {
+            if (!data.senderName || !data.receiverName || !data.receiverPhone || !data.receiverAddress || !data.senderPhone || data.weight <= 0) {
                 alert("Моля, попълнете всички задължителни полета за Подател и Получател!");
                 return;
             }
@@ -244,7 +244,7 @@
                 }
             } catch (error) {
                 console.error("Грешка:", error);
-                alert("Няма връзка със сървъра. Проверете дали е стартиран (dotnet run).");
+                alert("Няма връзка със сървъра. Проверете дали сървъра е стартиран.");
             }
         }
     </script>
