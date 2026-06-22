@@ -164,101 +164,87 @@
     <script>
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         document.getElementById('currentDate').innerText = new Date().toLocaleDateString('bg-BG', options);
-
+    
         const user = JSON.parse(localStorage.getItem('user'));
         if (user && user.username) {
             document.getElementById('managerName').innerText = user.username;
         } else {
             window.location.href = 'index.html'; 
         }
-
+    
         function logout() { 
             localStorage.removeItem('user'); 
             window.location.href = 'index.html';
         }
-
+    
         let reportData = [];
-
+    
         window.onload = async function() {
             try {
                 const response = await fetch('/api/shipments/stats');
                 if (response.ok) {
                     const stats = await response.json();
                     
-                    // Запазваме всички пратки и доставените и отказаните за дневния отчет
                     reportData = stats.lastShipments;
-
+    
                     document.getElementById('totalCount').innerText = stats.totalShipments;
                     document.getElementById('deliveredCount').innerText = stats.deliveredCount;
                     document.getElementById('problemCount').innerText = stats.problemCount;
-
-                    
-                    // Броим колко пратки реално са в складовете без Доставени и Отказани
+    
                     const activeSofia = reportData.filter(s => 
                         s.currentWarehouseId === 1 && s.status !== "Delivered" && s.status !== "Refused"
                     ).length;
-
+    
                     const activeVarna = reportData.filter(s => 
                         s.currentWarehouseId === 2 && s.status !== "Delivered" && s.status !== "Refused"
                     ).length;
-
-                    // Показваме новите, правилни бройки
+    
                     document.getElementById('sofiaCount').innerText = activeSofia;
                     document.getElementById('varnaCount').innerText = activeVarna;
                     
-                    // Изчисляваме процентите спрямо новите бройки (капацитета е 50)
                     let sofiaPercent = (activeSofia / 50) * 100;
                     let varnaPercent = (activeVarna / 50) * 100;
                     
                     document.getElementById('sofiaBar').style.width = (sofiaPercent > 100 ? 100 : sofiaPercent) + '%';
                     document.getElementById('varnaBar').style.width = (varnaPercent > 100 ? 100 : varnaPercent) + '%';
-                    
                 }
             } catch (error) {
                 console.error("Грешка при зареждане на статистиката:", error);
             }
         };
-
+    
+       
+        function getStatusDetails(status) {
+            const statusDictionary = {
+                "Registered": { text: "Регистрирана", bg: "bg-info text-dark" },
+                "In Transit": { text: "В движение", bg: "bg-warning text-dark" },
+                "In Warehouse": { text: "В склад", bg: "bg-light border border-dark text-dark" },
+                "Delivered": { text: "Доставена", bg: "bg-success text-white" },
+                "Refused": { text: "Отказана", bg: "bg-danger text-white" },
+                "Redirected": { text: "Пренасочена", bg: "bg-primary text-white" },
+                "Damaged": { text: "Повредена", bg: "bg-danger text-white" },
+                "Problem": { text: "Проблем", bg: "bg-danger text-white" }
+            };
+    
+            // Ако статусът вече е на български или го няма в речника
+            return statusDictionary[status] || { text: status, bg: "bg-secondary text-white" };
+        }
+    
         function generateReport() {
             const tbody = document.getElementById('reportTableBody');
             tbody.innerHTML = ''; 
-
+    
             if (!reportData || reportData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="text-muted fst-italic py-4">Няма данни за пратки днес.</td></tr>';
             } else {
                 
-                
                 reportData.forEach(s => {
                     
-                    let displayStatus = s.status; 
-                    let bgStatus = "";
-
-                    if (s.status === "Delivered" || s.status === "Доставена") { 
-                        displayStatus = "Доставена"; 
-                        bgStatus = "bg-success text-white"; 
-                    }
-                    else if (s.status === "In Transit" || s.status === "В движение") { 
-                        displayStatus = "В движение"; 
-                        bgStatus = "bg-warning text-dark"; 
-                    }
-                    else if (s.status === "In Warehouse" || s.status === "В склад") { 
-                        displayStatus = "В склад"; 
-                        bgStatus = "bg-light border border-dark text-dark"; 
-                    }
-                    else if (s.status === "Refused" || s.status === "Отказана") { 
-                        displayStatus = "Отказана"; 
-                        bgStatus = "bg-danger text-white"; 
-                    }
-                    else if (s.status === "Registered" || s.status === "Регистрирана") {
-                        displayStatus = "Регистрирана";
-                        bgStatus = "bg-info text-dark";
-                    }
-                    else if (s.status === "Redirected" || s.status === "Пренасочена") { 
-                        displayStatus = "Пренасочена"; 
-                        bgStatus = "bg-primary text-white"; 
-                    }
-
-                    
+                    //вземаме превода и цвета от речникa
+                    const statusInfo = getStatusDetails(s.status);
+                    let displayStatus = statusInfo.text;
+                    let bgStatus = statusInfo.bg;
+    
                     let location = "Неразпределена";
                     if (s.status === "Delivered" || s.status === "Refused") {
                         location = `<span class="fst-italic text-muted">Приключена</span>`;
@@ -267,13 +253,19 @@
                         if (s.currentWarehouseId === 2) location = "Склад Север (Варна)";
                         if (s.assignedCourierId) location = "При куриер";
                     }
+    
+                    // Преводач за типовете проблеми
+                    let translatedProblem = s.problemType;
+                    if (s.problemType === "Damaged") translatedProblem = "Повредена";
+                    else if (s.problemType === "Wrong Address") translatedProblem = "Грешен адрес";
+                    else if (s.problemType === "Lost") translatedProblem = "Изгубена";
+                    else if (s.problemType === "Delayed") translatedProblem = "Закъснение";
 
-                    let problemText = s.problemType ? `<span class="text-danger fw-bold"><i class="fas fa-exclamation-circle"></i> ${s.problemType}</span>` : '<span class="text-success fw-bold"><i class="fas fa-check"></i> ОК</span>';
-
+                    let problemText = s.problemType ? `<span class="text-danger fw-bold"><i class="fas fa-exclamation-circle"></i> ${translatedProblem}</span>` : '<span class="text-success fw-bold"><i class="fas fa-check"></i> ОК</span>';
+    
                     let rowClass = s.problemType ? "table-danger" : "";
-
                     let creator = s.createdBy ? s.createdBy : "-";
-
+    
                     const row = `
                         <tr class="${rowClass}">
                             <td class="fw-bold text-primary">${s.trackingNumber}</td>
@@ -286,7 +278,7 @@
                     tbody.innerHTML += row;
                 });
             }
-
+    
             document.getElementById('reportSection').style.display = 'block';
             document.getElementById('reportSection').scrollIntoView({ behavior: 'smooth' });
         }
